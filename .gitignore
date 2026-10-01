@@ -1,0 +1,42 @@
+﻿# Virtual Environments
+venv/
+.venv/
+env/
+.env
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Large installers / binary dependencies
+tesseract_setup.exe
+poppler.zip
+
+# Runtime temporary data & uploads
+uploads/*
+!uploads/.gitkeep
+processed_output/*
+!processed_output/.gitkeep
+audio_cache/*
+!audio_cache/.gitkeep
+temp_ocr_extracted/*
+!temp_ocr_extracted/.gitkeep
+temp_test_extracted/*
+!temp_test_extracted/.gitkeep
+
+# Index artifacts (generated locally)
+processed_chunks.json
+processed_chunks.pkl
+
+# Logs & Error dumps
+*.log
+*.err
+
+# IDEs & OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

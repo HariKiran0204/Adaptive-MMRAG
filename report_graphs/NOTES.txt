@@ -1,0 +1,16 @@
+Report Graph Pack
+==================
+These figures were generated from actual local project logs.
+Recommended use in PPT/report: mention them as experimental run analytics.
+
+Total logged queries: 260
+Latest processed chunks: 0
+Latest processed source count: 0
+
+Generated images:
+01_kpi_dashboard.png
+02_query_runtime_breakdown.png
+03_response_size_and_retrieval.png
+04_query_mode_share.png
+05_processing_profile.png
+06_efficiency_map.png

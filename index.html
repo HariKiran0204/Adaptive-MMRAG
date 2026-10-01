@@ -1,0 +1,2023 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Adaptive-MMRAG — Next-Gen Offline Multimodal Intelligence</title>
+    <!-- ✅ FULLY OFFLINE — No CDN or external font requests -->
+    <!-- System font stack: Inter (Win11/macOS), Segoe UI (Win10), sans-serif fallback -->
+    <style>
+        @font-face {
+            font-family: 'Inter';
+            /* Use system Inter if installed, else fall through to Segoe UI / system-ui */
+            src: local('Inter'), local('Inter Regular'), local('Inter-Regular');
+            font-weight: 400;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: local('Inter Medium'), local('Inter-Medium');
+            font-weight: 500;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: local('Inter SemiBold'), local('Inter-SemiBold');
+            font-weight: 600;
+        }
+        @font-face {
+            font-family: 'Inter';
+            src: local('Inter Bold'), local('Inter-Bold');
+            font-weight: 700;
+        }
+        @font-face {
+            font-family: 'JetBrains Mono';
+            src: local('JetBrains Mono'), local('JetBrainsMono-Regular'), local('Cascadia Code'), local('Consolas'), local('Courier New');
+            font-weight: 400;
+        }
+    </style>
+
+    <style>
+        :root {
+            --primary: #4f46e5;
+            --primary-hover: #4338ca;
+            --primary-light: #eef2ff;
+            --primary-glow: rgba(79, 70, 229, 0.25);
+            --accent-purple: #7c3aed;
+            --accent-cyan: #0284c7;
+            --accent-emerald: #059669;
+            --bg-body: #f8fafc;
+            --bg-sidebar: #ffffff;
+            --bg-card: #ffffff;
+            --bg-card-subtle: #f8fafc;
+            --border-subtle: #e2e8f0;
+            --border-hover: #cbd5e1;
+            --border-focus: #818cf8;
+            --text-main: #0f172a;
+            --text-muted: #64748b;
+            --text-subtle: #94a3b8;
+            --radius-xl: 20px;
+            --radius-lg: 14px;
+            --radius-md: 10px;
+            --radius-sm: 8px;
+            --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.05);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+            --shadow-lg: 0 10px 25px rgba(0, 0, 0, 0.07);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: var(--bg-body);
+            color: var(--text-main);
+            height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            background: radial-gradient(circle at 50% 0%, #ede9fe 0%, #f8fafc 50%);
+        }
+
+        /* Clean Glassmorphic Light Navbar */
+        .glass-navbar {
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-bottom: 1px solid var(--border-subtle);
+            padding: 12px 28px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            z-index: 100;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+        }
+
+        .brand-section {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .brand-icon {
+            width: 38px;
+            height: 38px;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            border-radius: var(--radius-md);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.3em;
+            color: white;
+            box-shadow: 0 4px 12px var(--primary-glow);
+        }
+
+        .brand-text h1 {
+            font-size: 1.3em;
+            font-weight: 800;
+            letter-spacing: -0.03em;
+            background: linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-text p {
+            font-size: 0.76em;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+
+        .header-meta {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .agent-badge-pill {
+            background: var(--primary-light);
+            border: 1px solid #c7d2fe;
+            color: var(--primary);
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .status-pill {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #ecfdf5;
+            border: 1px solid #a7f3d0;
+            color: #065f46;
+            padding: 5px 14px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 600;
+        }
+
+        .pulse-emerald {
+            width: 8px;
+            height: 8px;
+            background: #10b981;
+            border-radius: 50%;
+            box-shadow: 0 0 8px #10b981;
+            animation: pulseDot 2s infinite;
+        }
+
+        @keyframes pulseDot {
+            0% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.6); }
+            70% { transform: scale(1.05); box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+            100% { transform: scale(0.95); box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+        }
+
+        /* Workspace Layout */
+        .workspace {
+            display: grid;
+            grid-template-columns: 360px 1fr;
+            flex: 1;
+            overflow: hidden;
+        }
+
+        /* Modern Light Sidebar */
+        .sidebar {
+            background: var(--bg-sidebar);
+            border-right: 1px solid var(--border-subtle);
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            overflow-y: auto;
+        }
+
+        .card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-lg);
+            padding: 16px;
+            box-shadow: var(--shadow-sm);
+            transition: all 0.2s ease;
+        }
+
+        .card:hover {
+            border-color: var(--border-hover);
+            box-shadow: var(--shadow-md);
+        }
+
+        .card-header {
+            font-size: 0.82em;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .modality-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .chip {
+            font-size: 0.72em;
+            font-weight: 600;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            background: #f1f5f9;
+            border: 1px solid #e2e8f0;
+            color: #475569;
+        }
+
+        /* Drop Zone */
+        .upload-dropzone {
+            border: 2px dashed #818cf8;
+            background: #faf5ff;
+            border-radius: var(--radius-md);
+            padding: 20px 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.25s ease;
+            position: relative;
+            margin-bottom: 12px;
+        }
+
+        .upload-dropzone:hover {
+            background: #f3e8ff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.12);
+        }
+
+        .upload-dropzone input[type=file] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .drop-icon {
+            font-size: 2em;
+            margin-bottom: 4px;
+        }
+
+        .drop-title {
+            font-size: 0.88em;
+            font-weight: 700;
+            color: var(--primary);
+            display: block;
+        }
+
+        .drop-sub {
+            font-size: 0.74em;
+            color: var(--text-muted);
+            margin-top: 3px;
+        }
+
+        /* File List */
+        .file-list {
+            max-height: 140px;
+            overflow-y: auto;
+            margin-bottom: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .file-item {
+            background: #f8fafc;
+            border: 1px solid var(--border-subtle);
+            padding: 7px 10px;
+            border-radius: var(--radius-sm);
+            font-size: 0.8em;
+            font-weight: 500;
+            color: var(--text-main);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Action Buttons */
+        .btn-modern {
+            width: 100%;
+            padding: 11px 16px;
+            border-radius: var(--radius-sm);
+            border: none;
+            font-size: 0.9em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .btn-glow-primary {
+            background: linear-gradient(135deg, #4f46e5 0%, #4338ca 100%);
+            color: white;
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.25);
+        }
+
+        .btn-glow-primary:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4338ca 0%, #3730a3 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(79, 70, 229, 0.35);
+        }
+
+        .btn-ghost-danger {
+            background: #ffffff;
+            color: #ef4444;
+            border: 1px solid #fecaca;
+            margin-top: 8px;
+        }
+
+        .btn-ghost-danger:hover:not(:disabled) {
+            background: #fef2f2;
+            border-color: #f87171;
+        }
+
+        .btn-modern:disabled {
+            background: #e2e8f0 !important;
+            color: #94a3b8 !important;
+            border: none !important;
+            cursor: not-allowed;
+            box-shadow: none !important;
+            transform: none !important;
+        }
+
+        /* Mode Group */
+        .mode-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .mode-card {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 12px;
+            background: #f8fafc;
+            border: 1px solid var(--border-subtle);
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .mode-card:hover {
+            border-color: #c7d2fe;
+            background: #eef2ff;
+        }
+
+        .mode-card input[type=radio] {
+            margin-top: 3px;
+            accent-color: var(--primary);
+        }
+
+        .mode-title {
+            font-size: 0.84em;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+
+        .mode-desc {
+            font-size: 0.72em;
+            color: var(--text-muted);
+            margin-top: 2px;
+        }
+
+        /* Status Toast */
+        .status-box {
+            padding: 10px 14px;
+            border-radius: var(--radius-sm);
+            font-size: 0.82em;
+            font-weight: 500;
+            display: none;
+            animation: fadeIn 0.3s;
+        }
+
+        .status-box.info {
+            background: #eff6ff;
+            color: #1d4ed8;
+            border: 1px solid #bfdbfe;
+        }
+
+        .status-box.success {
+            background: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .status-box.error {
+            background: #fef2f2;
+            color: #b91c1c;
+            border: 1px solid #fecaca;
+        }
+
+        /* Chat Area */
+        .chat-container {
+            display: flex;
+            flex-direction: column;
+            height: calc(100vh - 63px);
+            padding: 22px 32px;
+            position: relative;
+            background: transparent;
+        }
+
+        .messages-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            scroll-behavior: smooth;
+        }
+
+        .message-row {
+            display: flex;
+            flex-direction: column;
+            max-width: 82%;
+            animation: slideUpFade 0.25s ease-out;
+        }
+
+        @keyframes slideUpFade {
+            from { opacity: 0; transform: translateY(12px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .message-row.user {
+            align-self: flex-end;
+        }
+
+        .message-row.assistant {
+            align-self: flex-start;
+        }
+
+        .meta-header {
+            font-size: 0.76em;
+            font-weight: 700;
+            margin-bottom: 6px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: var(--text-muted);
+        }
+
+        .message-row.user .meta-header {
+            justify-content: flex-end;
+            color: var(--primary);
+        }
+
+        .bubble {
+            padding: 16px 20px;
+            border-radius: var(--radius-lg);
+            font-size: 0.95em;
+            line-height: 1.65;
+            white-space: pre-wrap;
+            position: relative;
+            box-shadow: var(--shadow-sm);
+        }
+
+        .message-row.user .bubble {
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: #ffffff;
+            border-radius: 18px 18px 4px 18px;
+            box-shadow: 0 4px 14px rgba(79, 70, 229, 0.25);
+        }
+
+        .message-row.assistant .bubble {
+            background: #ffffff;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-main);
+            border-radius: 18px 18px 18px 4px;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+        }
+
+        /* Action Toolbar on Assistant Bubble */
+        .bubble-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 10px;
+            padding-top: 8px;
+            border-top: 1px solid #f1f5f9;
+        }
+
+        .action-icon-btn {
+            background: #f8fafc;
+            border: 1px solid var(--border-subtle);
+            color: var(--text-muted);
+            font-size: 0.76em;
+            font-weight: 600;
+            padding: 5px 10px;
+            border-radius: var(--radius-sm);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            transition: all 0.2s ease;
+        }
+
+        .action-icon-btn:hover {
+            background: var(--primary-light);
+            color: var(--primary);
+            border-color: #c7d2fe;
+        }
+
+        .action-icon-btn.playing {
+            background: #fef2f2;
+            color: #dc2626;
+            border-color: #fca5a5;
+        }
+
+        .action-icon-btn.loading {
+            opacity: 0.7;
+            cursor: wait;
+        }
+
+        .action-icon-btn.voice-select {
+            cursor: pointer;
+            outline: none;
+        }
+
+        /* Suggested Queries */
+        .suggestions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+
+        .suggestion-chip {
+            background: var(--primary-light);
+            border: 1px solid #c7d2fe;
+            color: var(--primary);
+            padding: 6px 12px;
+            border-radius: 20px;
+            font-size: 0.78em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .suggestion-chip:hover {
+            background: #e0e7ff;
+            border-color: var(--primary);
+            transform: translateY(-1px);
+        }
+
+        
+        /* NLP Profiles & Keyphrase Tags (Option 2) */
+        .nlp-profile-card {
+            margin-top: 10px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            padding: 10px 14px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            text-align: left;
+        }
+        .nlp-card-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 0.86em;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 8px;
+        }
+        .nlp-badge {
+            background: #eff6ff;
+            color: #2563eb;
+            border: 1px solid #bfdbfe;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-size: 0.72em;
+            font-weight: 600;
+        }
+        .nlp-chips-wrap {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 8px;
+        }
+        .nlp-chip {
+            background: #f1f5f9;
+            color: #334155;
+            border: 1px solid #cbd5e1;
+            padding: 4px 10px;
+            border-radius: 14px;
+            font-size: 0.75em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            user-select: none;
+        }
+        .nlp-chip:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+            border-color: #94a3b8;
+            transform: translateY(-1px);
+        }
+        .nlp-summary-details {
+            margin-top: 6px;
+            background: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 0.82em;
+        }
+        .nlp-summary-details summary {
+            cursor: pointer;
+            font-weight: 600;
+            color: #475569;
+            outline: none;
+        }
+        .nlp-summary-content {
+            margin-top: 6px;
+            color: #334155;
+            line-height: 1.5;
+            font-size: 0.86em;
+            padding-top: 6px;
+            border-top: 1px dashed #cbd5e1;
+        }
+
+        /* Clean Light Adaptive Details Card */
+        .adaptive-details {
+            margin-top: 12px;
+            background: #f8fafc;
+            border: 1px solid #cbd5e1;
+            border-radius: var(--radius-sm);
+            overflow: hidden;
+            font-size: 0.84em;
+        }
+
+        .adaptive-details summary {
+            padding: 9px 14px;
+            font-weight: 700;
+            background: #f1f5f9;
+            cursor: pointer;
+            outline: none;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            color: #334155;
+            user-select: none;
+        }
+
+        .adaptive-details summary:hover {
+            background: #e2e8f0;
+            color: #0f172a;
+        }
+
+        .adaptive-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px 16px;
+            padding: 12px 14px;
+            background: #ffffff;
+            border-top: 1px solid #e2e8f0;
+        }
+
+        .adaptive-grid div {
+            font-size: 0.86em;
+            line-height: 1.45;
+            color: #475569;
+        }
+
+        /* Bottom Floating Input Toolbar */
+        .floating-input-wrap {
+            margin-top: 14px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 36px;
+            padding: 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            box-shadow: var(--shadow-lg);
+            transition: all 0.25s ease;
+        }
+
+        .floating-input-wrap:focus-within {
+            border-color: var(--primary);
+            box-shadow: 0 8px 28px rgba(79, 70, 229, 0.18);
+        }
+
+        .query-input {
+            flex: 1;
+            background: transparent;
+            border: none;
+            outline: none;
+            font-size: 0.95em;
+            color: var(--text-main);
+            font-family: inherit;
+            padding: 8px 10px;
+        }
+
+        .query-input::placeholder {
+            color: #94a3b8;
+        }
+
+        /* Glowing Light Microphone Button */
+        .mic-btn-modern {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            background: #f1f5f9;
+            border: 1px solid #cbd5e1;
+            color: #475569;
+            font-size: 1.25em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.25s ease;
+            position: relative;
+            flex-shrink: 0;
+        }
+
+        .mic-btn-modern:hover {
+            background: var(--primary-light);
+            border-color: #c7d2fe;
+            color: var(--primary);
+            transform: scale(1.06);
+        }
+
+        .mic-btn-modern.recording {
+            background: #fee2e2;
+            border-color: #ef4444;
+            color: #dc2626;
+            animation: modernWavePulseLight 1.3s infinite;
+        }
+
+        @keyframes modernWavePulseLight {
+            0% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.6);
+                transform: scale(1);
+            }
+            50% {
+                box-shadow: 0 0 0 10px rgba(239, 68, 68, 0);
+                transform: scale(1.08);
+            }
+            100% {
+                box-shadow: 0 0 0 0 rgba(239, 68, 68, 0);
+                transform: scale(1);
+            }
+        }
+
+        /* Send Button */
+        .send-btn-modern {
+            padding: 10px 22px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #4f46e5 0%, #6366f1 100%);
+            color: white;
+            border: none;
+            font-size: 0.9em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(79, 70, 229, 0.3);
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .send-btn-modern:hover:not(:disabled) {
+            background: linear-gradient(135deg, #4338ca 0%, #4f46e5 100%);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(79, 70, 229, 0.4);
+        }
+
+        .send-btn-modern:disabled {
+            background: #cbd5e1;
+            color: #94a3b8;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 10px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .spin-loader {
+            display: inline-block;
+            width: 14px;
+            height: 14px;
+            border: 2px solid rgba(255,255,255,0.4);
+            border-radius: 50%;
+            border-top-color: #fff;
+            animation: spin 0.8s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        /* ── Stop Button ────────────────────────────────── */
+        #stopBtn {
+            display: none;
+            padding: 10px 18px;
+            border-radius: 24px;
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            color: white;
+            border: none;
+            font-size: 0.88em;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 2px 8px rgba(239, 68, 68, 0.35);
+            flex-shrink: 0;
+            gap: 6px;
+            align-items: center;
+        }
+        #stopBtn.visible {
+            display: flex;
+        }
+        #stopBtn:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 4px 14px rgba(239, 68, 68, 0.5);
+        }
+
+        /* ── Jump-to-Bottom Button ──────────────────────── */
+        #jumpToBottomBtn {
+            display: none;
+            position: absolute;
+            bottom: 80px;
+            right: 24px;
+            z-index: 50;
+            background: #4f46e5;
+            color: #fff;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 14px;
+            font-size: 0.82em;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 3px 10px rgba(79,70,229,0.4);
+            transition: all 0.2s ease;
+        }
+        #jumpToBottomBtn:hover {
+            background: #4338ca;
+            transform: translateY(-1px);
+        }
+
+        /* ── Attach (📎) Button ─────────────────────────────── */
+        #attachBtn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid #c7d2fe;
+            background: #f8fafc;
+            font-size: 1.1em;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+            flex-shrink: 0;
+        }
+        #attachBtn:hover { background: #e0e7ff; border-color: #818cf8; }
+        #attachBtn.has-image { border-color: #4f46e5; background: #eef2ff; }
+
+        /* ── Attach Image Preview Strip ─────────────────────── */
+        #attachPreview {
+            display: none;
+            align-items: center;
+            gap: 8px;
+            background: #f0fdf4;
+            border: 1px solid #bbf7d0;
+            border-radius: 10px;
+            padding: 6px 10px;
+            font-size: 0.8em;
+            color: #166534;
+        }
+        #attachPreview.visible { display: flex; }
+        #attachPreview img {
+            height: 48px;
+            width: 48px;
+            object-fit: cover;
+            border-radius: 6px;
+            border: 1px solid #86efac;
+        }
+        #attachRemoveBtn {
+            background: #dcfce7;
+            border: 1px solid #86efac;
+            color: #166534;
+            border-radius: 50%;
+            width: 22px;
+            height: 22px;
+            font-size: 0.8em;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+            margin-left: auto;
+        }
+        /* Thumbnail in user message bubbles */
+        .user-img-thumb {
+            max-width: 180px;
+            max-height: 130px;
+            border-radius: 8px;
+            border: 1px solid #c7d2fe;
+            margin-bottom: 6px;
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Top Glassmorphic Light Navbar -->
+        <header class="glass-navbar">
+            <div class="brand-section">
+                <div class="brand-icon">🧠</div>
+                <div class="brand-text">
+                    <h1>Adaptive-MMRAG</h1>
+                    <p>⚡ Autonomous 5-Agent Multimodal Intelligence</p>
+                </div>
+            </div>
+
+            <div class="header-meta">
+                <div class="agent-badge-pill">
+                    <span>5 Specialized Agents</span>
+                </div>
+                <div class="status-pill">
+                    <div class="pulse-emerald"></div>
+                    <span>100% Offline Engine</span>
+                </div>
+            </div>
+        </header>
+
+        <!-- Main Workspace -->
+        <main class="workspace">
+            <!-- Sidebar -->
+            <aside class="sidebar">
+                <div class="card">
+                    <div class="card-header">📁 Ingestion Hub</div>
+                    
+                    <div class="modality-chips">
+                        <span class="chip">📄 PDF</span>
+                        <span class="chip">📝 DOCX</span>
+                        <span class="chip">🖼️ Image/OCR</span>
+                        <span class="chip">🎧 Audio/Whisper</span>
+                    </div>
+
+                    <div class="upload-dropzone">
+                        <input type="file" id="fileInput" multiple 
+                               accept=".pdf,.docx,.doc,.png,.jpg,.jpeg,.gif,.bmp,.webp,.mp3,.wav,.m4a,.flac,.ogg">
+                        <div class="drop-icon">☁️</div>
+                        <span class="drop-title">Select Documents or Audio</span>
+                        <span class="drop-sub">Drag & drop or click to browse</span>
+                    </div>
+
+                    <div id="fileList" class="file-list"></div>
+
+                    <button class="btn-modern btn-glow-primary" id="uploadBtn" disabled>
+                        🚀 Process & Index Files
+                    </button>
+
+                    <button class="btn-modern btn-ghost-danger" id="clearBtn">
+                        🗑️ Clear Session
+                    </button>
+
+                    <button class="btn-modern btn-ghost-danger" id="clearChatBtn" onclick="clearChatHistory()" title="Clear conversation history (model forgets previous turns)" style="margin-top:4px;">
+                        💬 Clear Chat History
+                    </button>
+                </div>
+
+                <div class="card">
+                    <div class="card-header">⚙️ Retrieval Architecture</div>
+                    <div class="mode-group">
+                        <label class="mode-card" style="border: 2px solid #4f46e5; background: linear-gradient(135deg,#1e1b4b 0%,#312e81 100%);">
+                            <input type="radio" name="ragMode" value="adaptive" checked>
+                            <div>
+                                <div class="mode-title" style="color:#a5b4fc;">🚀 Adaptive-MMRAG</div>
+                                <div class="mode-desc" style="color:#c7d2fe;">5-Agent pipeline · Evidence verification · Re-retrieval</div>
+                            </div>
+                        </label>
+                        <label class="mode-card">
+                            <input type="radio" name="ragMode" value="baseline">
+                            <div>
+                                <div class="mode-title">📋 Baseline RAG</div>
+                                <div class="mode-desc">Fixed Top-K single-pass vector retrieval</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <div id="uploadStatus" class="status-box"></div>
+            </aside>
+
+            <!-- Chat Container -->
+            <section class="chat-container" style="position:relative;">
+                <div id="messages" class="messages-scroll">
+                    <div class="message-row assistant">
+                        <div class="meta-header">🤖 Adaptive Assistant</div>
+                        <div class="bubble">
+                            Welcome! Upload any PDF, Word (.docx), image, or audio recording to begin.
+                            You can type your query, click the 🎙️ microphone to speak your question, or attach an image with 📎.
+
+                            <div class="suggestions-container">
+                                <div class="suggestion-chip" onclick="setQuery('Give me a complete summary of the document')">📊 Document Summary</div>
+                                <div class="suggestion-chip" onclick="setQuery('What are the key names, dates, and numbers?')">🔍 Extract Key Facts</div>
+                                <div class="suggestion-chip" onclick="setQuery('What was discussed in the audio recording?')">🎧 Audio Key Points</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Jump to bottom button (shown when user scrolled up during generation) -->
+                <button id="jumpToBottomBtn" onclick="jumpToBottom()">↓ Jump to latest</button>
+
+                <!-- Floating Toolbar -->
+                <div class="floating-input-wrap" style="flex-direction:column; gap:6px;">
+                    <!-- Image attachment preview (shown when image is selected) -->
+                    <div id="attachPreview">
+                        <img id="attachThumb" src="" alt="Attached image">
+                        <span id="attachName">image.jpg</span>
+                        <button id="attachRemoveBtn" onclick="removeAttachedImage()" title="Remove image">✕</button>
+                    </div>
+                    <!-- Main input row -->
+                    <div style="display:flex; gap:8px; align-items:center; width:100%;">
+                        <button id="micBtn" class="mic-btn-modern" title="Click to speak your question">🎙️</button>
+                        <!-- Hidden file input for image/document attachment -->
+                        <input type="file" id="imgAttachInput" accept=".png,.jpg,.jpeg,.gif,.webp,.bmp,.pdf,.docx,.doc,.txt" style="display:none;">
+                        <button id="attachBtn" title="Attach an image or document to query (images: instant answer; PDF/DOCX: auto-indexes then answers)" onclick="document.getElementById('imgAttachInput').click()">📎</button>
+                        <input type="text" id="queryInput" class="query-input"
+                               placeholder="Ask a question or type here...">
+                        <button id="stopBtn" onclick="stopGeneration()" title="Stop response generation">⏹ Stop</button>
+                        <button id="sendBtn" class="send-btn-modern">Send ➔</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        // Auto-detect API base: If opened directly as file:// in browser, route to http://127.0.0.1:5000
+        const API_BASE = (window.location.protocol === 'http:' || window.location.protocol === 'https:') ? '' : 'http://127.0.0.1:5000';
+
+        let selectedFiles = [];
+        let isProcessing = false;
+        let chatbotReady = false;
+        let currentAbortController = null;
+        let userScrolledUp = false;
+
+        // Bug 10: Conversation history for multi-turn memory (last 12 turns max stored)
+        let conversationHistory = [];
+
+        // Voice recording variables
+        let mediaRecorder = null;
+        let audioChunks = [];
+        let isRecording = false;
+        let recordingStream = null;
+        let partialTranscribeInterval = null; // timer for real-time partial transcription
+
+        // Image-as-prompt state (Bug 7: also handles documents)
+        let attachedImageFile = null;
+        let attachedImageDataURL = null;
+        let attachedDocFile = null;  // Bug 7: for non-image attachments (PDF, DOCX, TXT)
+
+        // Bug 7: Helper — detect if attached file is a document (not an image)
+        const IMAGE_EXTENSIONS = new Set(['png','jpg','jpeg','gif','webp','bmp']);
+        function isImageFile(filename) {
+            const ext = (filename || '').split('.').pop().toLowerCase();
+            return IMAGE_EXTENSIONS.has(ext);
+        }
+
+        const fileInput = document.getElementById('fileInput');
+        const fileList = document.getElementById('fileList');
+        const uploadBtn = document.getElementById('uploadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const queryInput = document.getElementById('queryInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const micBtn = document.getElementById('micBtn');
+        const messages = document.getElementById('messages');
+        const jumpToBottomBtn = document.getElementById('jumpToBottomBtn');
+        const attachBtn = document.getElementById('attachBtn');
+        const attachPreview = document.getElementById('attachPreview');
+        const attachThumb = document.getElementById('attachThumb');
+        const attachName = document.getElementById('attachName');
+        const imgAttachInput = document.getElementById('imgAttachInput');
+
+        // ── Smart Scroll: don't force user back to bottom when they scroll up ───
+        messages.addEventListener('scroll', () => {
+            const atBottom = messages.scrollTop + messages.clientHeight >= messages.scrollHeight - 40;
+            if (!atBottom) {
+                userScrolledUp = true;
+                if (isProcessing) jumpToBottomBtn.style.display = 'block';
+            } else {
+                userScrolledUp = false;
+                jumpToBottomBtn.style.display = 'none';
+            }
+        });
+
+        function jumpToBottom() {
+            userScrolledUp = false;
+            jumpToBottomBtn.style.display = 'none';
+            messages.scrollTo({ top: messages.scrollHeight, behavior: 'smooth' });
+        }
+
+        // ── Stop Generation ─────────────────────────────────────────────────────
+        function stopGeneration() {
+            if (currentAbortController) {
+                currentAbortController.abort();
+                currentAbortController = null;
+            }
+        }
+
+        // ── Image Attachment ────────────────────────────────────────────────────
+        // Bug 7: File attach — handles both images and documents
+        imgAttachInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            if (isImageFile(file.name)) {
+                // Image path — show thumbnail preview
+                attachedDocFile = null;
+                attachedImageFile = file;
+                const reader = new FileReader();
+                reader.onload = (ev) => {
+                    attachedImageDataURL = ev.target.result;
+                    attachThumb.src = attachedImageDataURL;
+                    attachName.textContent = file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB)';
+                    attachPreview.classList.add('visible');
+                    attachBtn.classList.add('has-image');
+                    queryInput.placeholder = `Ask about the attached image...`;
+                };
+                reader.readAsDataURL(file);
+            } else {
+                // Document path (PDF/DOCX/TXT) — show doc preview, will auto-index on send
+                attachedImageFile = null;
+                attachedImageDataURL = null;
+                attachedDocFile = file;
+                attachThumb.src = '';
+                attachThumb.style.display = 'none';
+                attachName.textContent = '📄 ' + file.name + ' (' + (file.size / 1024).toFixed(1) + ' KB) — will auto-index on Send';
+                attachPreview.classList.add('visible');
+                attachBtn.classList.add('has-image');
+                queryInput.placeholder = `Type a question about this document (it will be indexed automatically)...`;
+            }
+            // Reset input so the same file can be re-selected
+            imgAttachInput.value = '';
+        });
+
+        function removeAttachedImage() {
+            attachedImageFile = null;
+            attachedImageDataURL = null;
+            attachedDocFile = null;
+            attachThumb.src = '';
+            attachThumb.style.display = '';
+            attachPreview.classList.remove('visible');
+            attachBtn.classList.remove('has-image');
+            queryInput.placeholder = 'Ask a question or type here...';
+        }
+
+
+        function escapeHtml(text) {
+            return text
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function setQuery(text) {
+            queryInput.value = text;
+            queryInput.focus();
+        }
+
+        function copyAnswerText(btn) {
+            const bubble = btn.closest('.bubble');
+            const textToCopy = bubble.innerText.replace(/📋 Copy Answer|🔊 Read Aloud|Copied!/g, '').trim();
+            navigator.clipboard.writeText(textToCopy).then(() => {
+                const orig = btn.innerHTML;
+                btn.innerHTML = '✅ Copied!';
+                setTimeout(() => { btn.innerHTML = orig; }, 2000);
+            });
+        }
+
+        function readAnswerAloud(btn) {
+            const bubble = btn.closest('.bubble');
+            const textToRead = bubble.innerText.replace(/📋 Copy Answer|🔊 Read Aloud/g, '').split('🔍 Adaptive RAG Telemetry')[0].trim();
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const utter = new SpeechSynthesisUtterance(textToRead);
+                utter.rate = 1.0;
+                window.speechSynthesis.speak(utter);
+            } else {
+                alert('Text-to-speech is not supported by your browser.');
+            }
+        }
+
+        // File selection
+        fileInput.addEventListener('change', (e) => {
+            selectedFiles = Array.from(e.target.files);
+            updateFileList();
+            uploadBtn.disabled = selectedFiles.length === 0;
+        });
+        
+        // Update file list
+        function updateFileList() {
+            if (selectedFiles.length === 0) {
+                fileList.innerHTML = '<div style="color: #94a3b8; text-align: center; padding: 6px; font-size: 0.78em;">No files selected</div>';
+                return;
+            }
+            
+            fileList.innerHTML = selectedFiles.map(file => 
+                `<div class="file-item">📄 ${escapeHtml(file.name)}</div>`
+            ).join('');
+        }
+        
+        // Upload and process
+        uploadBtn.addEventListener('click', async () => {
+            if (selectedFiles.length === 0 || isProcessing) return;
+            
+            isProcessing = true;
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="spin-loader"></span> Processing...';
+            showStatus('Processing files with parallel multi-modal ingestion...', 'info');
+            
+            const formData = new FormData();
+            selectedFiles.forEach(file => formData.append('files', file));
+            
+            try {
+                const response = await fetch(`${API_BASE}/upload`, {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok && data.success) {
+                    showStatus(data.message, 'success');
+                    chatbotReady = true;
+                    
+                    let profileHtml = '';
+                    if (data.nlp_profiles && Object.keys(data.nlp_profiles).length > 0) {
+                        profileHtml = '<div style="margin-top: 10px;">';
+                        for (const [fname, prof] of Object.entries(data.nlp_profiles)) {
+                            const kps = prof.keyphrases || [];
+                            const sumText = prof.summary || prof.extractive_summary || 'No summary available';
+                            const isImage = prof.is_image || false;
+                            const fileIcon = isImage ? '🖼️' : '📄';
+                            const badgeLabel = isImage ? 'Image' : (kps.length >= 2 ? 'Sections' : 'Keywords');
+                            const chipAction = isImage
+                                ? (k) => `Tell me about the image: ${escapeHtml(k)}`
+                                : (k) => `Explain the section: ${escapeHtml(k)}`;
+                            profileHtml += `
+                                <div class="nlp-profile-card">
+                                    <div class="nlp-card-header">
+                                        <span>${fileIcon} <b>${escapeHtml(fname)}</b></span>
+                                        <span class="nlp-badge">${badgeLabel}</span>
+                                    </div>
+                                    <div class="nlp-chips-wrap">
+                                        ${kps.map(k => `<span class="nlp-chip" onclick="setQuery('${chipAction(k)}')">${isImage ? '🖼️' : '📌'} ${escapeHtml(k)}</span>`).join('')}
+                                    </div>
+                                    ${!isImage ? `<details class="nlp-summary-details">
+                                        <summary>📋 View Summary</summary>
+                                        <div class="nlp-summary-content">${escapeHtml(sumText)}</div>
+                                    </details>` : ''}
+                                </div>
+                            `;
+                        }
+                        profileHtml += '</div>';
+                    }
+                    addMessage('assistant', `✅ Files indexed in ${data.duration}! Ready for queries.\n\n📊 Total Chunks: ${data.total_chunks}${profileHtml}`);
+                } else {
+                    showStatus(data.error || 'Upload failed', 'error');
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                showStatus('Error: ' + error.message, 'error');
+            } finally {
+                isProcessing = false;
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = '🚀 Process & Index Files';
+            }
+        });
+        
+        // Clear all
+        clearBtn.addEventListener('click', async () => {
+            if (!confirm('Clear all files and start fresh?')) return;
+            
+            try {
+                const response = await fetch(`${API_BASE}/clear`, { method: 'POST' });
+                const data = await response.json();
+
+                
+                if (response.ok && data.success) {
+                    selectedFiles = [];
+                    updateFileList();
+                    fileInput.value = '';
+                    uploadBtn.disabled = true;
+                    chatbotReady = false;
+                    conversationHistory = [];  // Bug 10: also reset chat history
+                    messages.innerHTML = `
+                        <div class="message-row assistant">
+                            <div class="meta-header">🤖 Assistant</div>
+                            <div class="bubble">All data cleared. Upload new files to get started.</div>
+                        </div>
+                    `;
+                    showStatus('All data cleared', 'success');
+                }
+            } catch (error) {
+                showStatus('Error: ' + error.message, 'error');
+            }
+        });
+
+        // Bug 10: Clear only the conversation memory (keeps files indexed)
+        function clearChatHistory() {
+            conversationHistory = [];
+            showStatus('💬 Chat history cleared — model will answer fresh without prior context.', 'success');
+        }
+
+        // ====================================================================
+        // MICROPHONE RECORDING & LOCAL WHISPER TRANSCRIPTION (OFFLINE WAV)
+        // ====================================================================
+        let audioContext = null;
+        let audioInputNode = null;
+        let audioProcessor = null;
+        let pcmSampleBuffers = [];
+        let pcmRecordingStream = null;
+
+        micBtn.addEventListener('click', () => {
+            if (isProcessing) return;
+            if (isRecording) {
+                stopLocalVoiceRecording();
+            } else {
+                startLocalVoiceRecording();
+            }
+        });
+
+        const LANG_NAMES = {
+            'te': 'Telugu', 'hi': 'Hindi', 'ta': 'Tamil', 'kn': 'Kannada',
+            'ml': 'Malayalam', 'mr': 'Marathi', 'bn': 'Bengali',
+            'es': 'Spanish', 'fr': 'French', 'de': 'German', 'ar': 'Arabic',
+            'ja': 'Japanese', 'zh': 'Chinese', 'ko': 'Korean', 'ru': 'Russian',
+            'pt': 'Portuguese', 'it': 'Italian', 'en': 'English'
+        };
+
+        async function startLocalVoiceRecording() {
+            try {
+                if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                    const msg = 'Microphone access requires HTTP/HTTPS. Please access the application at http://localhost:5000 in your browser, not via a file:/// path.';
+                    alert(msg);
+                    showStatus(msg, 'error');
+                    return;
+                }
+
+                pcmRecordingStream = await navigator.mediaDevices.getUserMedia({
+                    audio: {
+                        channelCount: 1,
+                        echoCancellation: true,
+                        noiseSuppression: true,
+                        autoGainControl: true
+                    }
+                });
+
+                audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                if (audioContext.state === 'suspended') {
+                    await audioContext.resume();
+                }
+
+                audioInputNode = audioContext.createMediaStreamSource(pcmRecordingStream);
+                audioProcessor = audioContext.createScriptProcessor(4096, 1, 1);
+                pcmSampleBuffers = [];
+
+                audioProcessor.onaudioprocess = (e) => {
+                    if (!isRecording) return;
+                    const channelData = e.inputBuffer.getChannelData(0);
+                    pcmSampleBuffers.push(new Float32Array(channelData));
+                };
+
+                // Connect to a muted gain node to keep the processor running without audio feedback in speakers
+                const silenceGain = audioContext.createGain();
+                silenceGain.gain.value = 0;
+                audioInputNode.connect(audioProcessor);
+                audioProcessor.connect(silenceGain);
+                silenceGain.connect(audioContext.destination);
+
+                isRecording = true;
+                micBtn.classList.add('recording');
+                micBtn.innerHTML = '⏹️';
+                micBtn.title = 'Click ⏹️ to stop and transcribe';
+                queryInput.placeholder = '🎙️ Listening... Speak your question now, then click ⏹️ when finished.';
+                showStatus('🎙️ Listening... Speak into your microphone, then click ⏹️ when done.', 'info');
+
+            } catch (err) {
+                console.error('Microphone error:', err);
+                let msg = err.message || err.name;
+                if (err.name === 'NotAllowedError' || err.name === 'PermissionDeniedError') {
+                    msg = 'Microphone permission was denied. Please allow microphone access in your browser (click the lock/settings icon in the address bar) and check Windows Privacy Settings.';
+                } else if (err.name === 'NotFoundError' || err.name === 'DevicesNotFoundError') {
+                    msg = 'No microphone found. Please connect or enable your microphone in Windows sound settings.';
+                } else if (err.name === 'NotReadableError') {
+                    msg = 'Microphone is currently in use by another application (e.g. Zoom, Teams, Discord).';
+                }
+                alert('Microphone error: ' + msg);
+                showStatus('Microphone error: ' + msg, 'error');
+                resetMicState();
+            }
+        }
+
+        async function stopLocalVoiceRecording() {
+            isRecording = false;
+            resetMicState();
+            queryInput.placeholder = '⏳ Transcribing with local Whisper...';
+            showStatus('⏳ Transcribing your speech with local Whisper...', 'info');
+
+            const sourceSampleRate = audioContext ? audioContext.sampleRate : 16000;
+
+            if (audioProcessor) {
+                try { audioProcessor.disconnect(); } catch (e) {}
+                audioProcessor = null;
+            }
+            if (audioInputNode) {
+                try { audioInputNode.disconnect(); } catch (e) {}
+                audioInputNode = null;
+            }
+            if (audioContext && audioContext.state !== 'closed') {
+                try { audioContext.close(); } catch (e) {}
+                audioContext = null;
+            }
+            if (pcmRecordingStream) {
+                pcmRecordingStream.getTracks().forEach(t => t.stop());
+                pcmRecordingStream = null;
+            }
+
+            let totalLength = 0;
+            for (let b of pcmSampleBuffers) totalLength += b.length;
+            if (totalLength < 3000) {
+                queryInput.placeholder = 'Ask a question or click 🎙️ to speak in any language...';
+                showStatus('Audio was too short or quiet. Please speak clearly into your microphone, then click ⏹️.', 'error');
+                return;
+            }
+
+            const merged = new Float32Array(totalLength);
+            let offset = 0;
+            for (let b of pcmSampleBuffers) {
+                merged.set(b, offset);
+                offset += b.length;
+            }
+
+            const targetSampleRate = 16000;
+            const resampled = downsampleBuffer(merged, sourceSampleRate, targetSampleRate);
+            const wavBlob = encodeWAV(resampled, targetSampleRate);
+
+            await sendWavForTranscription(wavBlob);
+        }
+
+        function downsampleBuffer(buffer, sourceRate, targetRate) {
+            if (sourceRate === targetRate) return buffer;
+            const ratio = sourceRate / targetRate;
+            const newLength = Math.round(buffer.length / ratio);
+            const result = new Float32Array(newLength);
+            for (let i = 0; i < newLength; i++) {
+                const srcIdx = Math.floor(i * ratio);
+                result[i] = buffer[srcIdx] || 0;
+            }
+            return result;
+        }
+
+        function encodeWAV(samples, sampleRate) {
+            const buffer = new ArrayBuffer(44 + samples.length * 2);
+            const view = new DataView(buffer);
+
+            const writeString = (offset, string) => {
+                for (let i = 0; i < string.length; i++) {
+                    view.setUint8(offset + i, string.charCodeAt(i));
+                }
+            };
+
+            writeString(0, 'RIFF');
+            view.setUint32(4, 36 + samples.length * 2, true);
+            writeString(8, 'WAVE');
+            writeString(12, 'fmt ');
+            view.setUint32(16, 16, true);
+            view.setUint16(20, 1, true);
+            view.setUint16(22, 1, true);
+            view.setUint32(24, sampleRate, true);
+            view.setUint32(28, sampleRate * 2, true);
+            view.setUint16(32, 2, true);
+            view.setUint16(34, 16, true);
+            writeString(36, 'data');
+            view.setUint32(40, samples.length * 2, true);
+
+            let offset = 44;
+            for (let i = 0; i < samples.length; i++, offset += 2) {
+                let s = Math.max(-1, Math.min(1, samples[i]));
+                view.setInt16(offset, s < 0 ? s * 0x8000 : s * 0x7FFF, true);
+            }
+
+            return new Blob([view], { type: 'audio/wav' });
+        }
+
+        async function sendWavForTranscription(wavBlob) {
+            const formData = new FormData();
+            formData.append('audio', wavBlob, 'query_voice.wav');
+
+            try {
+                const response = await fetch(`${API_BASE}/voice/transcribe`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                const data = await response.json();
+                queryInput.placeholder = 'Ask a question or type here...';
+
+                if (response.ok && data.success && data.text) {
+                    queryInput.value = data.text;
+                    showStatus(`🗣️ Recognized: "${data.text}"`, 'success');
+                    setTimeout(() => {
+                        sendQuery();
+                    }, 400);
+                } else {
+                    showStatus(data.error || 'Could not understand speech. Please try speaking again.', 'error');
+                }
+            } catch (err) {
+                console.error('Transcription fetch error:', err);
+                queryInput.placeholder = 'Ask a question or type here...';
+                showStatus('Voice transcription error: ' + err.message, 'error');
+            }
+        }
+
+        function resetMicState() {
+            isRecording = false;
+            micBtn.classList.remove('recording');
+            micBtn.innerHTML = '🎙️';
+            micBtn.title = 'Click to speak your question';
+        }
+
+        // Send query — supports optional overrides, image attach, doc attach, conversation history
+        async function sendQuery(overrides = {}) {
+            const query = queryInput.value.trim();
+            const hasImage = attachedImageFile !== null;
+            const hasDoc = attachedDocFile !== null;
+
+            // Need either text or an attachment to proceed
+            if (!query && !hasImage && !hasDoc) return;
+            if (isProcessing) return;
+
+            if (!chatbotReady && !hasImage && !hasDoc) {
+                addMessage('assistant', 'ℹ️ No files processed yet. Switching to general chat mode.');
+            }
+
+            const selectedMode = document.querySelector('input[name="ragMode"]:checked')?.value || 'adaptive';
+
+            // ── Bug 7: Document attach path — upload+index then auto-query ────────────
+            if (hasDoc && attachedDocFile) {
+                const docFile = attachedDocFile;
+                const docQuery = query || `Summarize this document: ${docFile.name}`;
+                removeAttachedImage();
+
+                // Show user message
+                addMessage('user', `📄 **Attaching & Indexing:** ${escapeHtml(docFile.name)}\n${query ? escapeHtml(query) : ''}`);
+                queryInput.value = '';
+
+                const indexingMsgId = addMessage('assistant', `⏳ **Auto-indexing** ${escapeHtml(docFile.name)}... Please wait a moment.`);
+                isProcessing = true;
+                sendBtn.disabled = true;
+                micBtn.disabled = true;
+                stopBtn.classList.add('visible');
+
+                try {
+                    const formData = new FormData();
+                    formData.append('files', docFile, docFile.name);
+                    const uploadResp = await fetch(`${API_BASE}/upload`, { method: 'POST', body: formData });
+                    const uploadData = await uploadResp.json();
+
+                    const indexingMsg = document.getElementById(indexingMsgId);
+                    if (indexingMsg) {
+                        const bubble = indexingMsg.querySelector('.bubble');
+                        if (bubble) {
+                            if (uploadData.success) {
+                                bubble.textContent = `✅ Indexed ${escapeHtml(docFile.name)} (${uploadData.total_chunks} chunks, ${uploadData.duration}). Now answering your question...`;
+                                chatbotReady = true;
+                            } else {
+                                bubble.textContent = `❌ Failed to index ${escapeHtml(docFile.name)}: ${uploadData.error || 'Unknown error'}`;
+                                isProcessing = false;
+                                sendBtn.disabled = false;
+                                micBtn.disabled = false;
+                                stopBtn.classList.remove('visible');
+                                return;
+                            }
+                        }
+                    }
+
+                    // Now stream the actual query
+                    queryInput.value = docQuery;
+                    isProcessing = false;
+                    sendBtn.disabled = false;
+                    micBtn.disabled = false;
+                    stopBtn.classList.remove('visible');
+                    await sendQuery({ ...overrides, _skipDocCheck: true });
+                } catch (err) {
+                    const indexingMsg = document.getElementById(indexingMsgId);
+                    if (indexingMsg) {
+                        const bubble = indexingMsg.querySelector('.bubble');
+                        if (bubble) bubble.textContent = `❌ Upload error: ${err.message}`;
+                    }
+                    isProcessing = false;
+                    sendBtn.disabled = false;
+                    micBtn.disabled = false;
+                    stopBtn.classList.remove('visible');
+                }
+                return;
+            }
+
+            // ── Standard image or text query path ───────────────────────────────────
+
+            // Build user message — show thumbnail if image attached
+            let userMsgContent = '';
+            if (hasImage && attachedImageDataURL) {
+                userMsgContent = `<img src="${attachedImageDataURL}" class="user-img-thumb" alt="Query image">`;
+            }
+            if (query) userMsgContent += (hasImage ? '<br>' : '') + escapeHtml(query);
+            addMessage('user', userMsgContent || '📎 [Image Query]');
+
+            // Bug 10: Save user message to history
+            if (query) {
+                conversationHistory.push({ role: 'user', content: query });
+                if (conversationHistory.length > 12) conversationHistory.splice(0, 2); // Keep last 12 turns
+            }
+
+            queryInput.value = '';
+
+            // Capture and clear attachment before awaiting
+            const imageFileToSend = attachedImageFile;
+            const imageQuery = query || 'What is this image about?';
+            if (hasImage) removeAttachedImage();
+
+            // ── Auto-scroll: Always jump to bottom when a new query is sent ──
+            userScrolledUp = false;
+            jumpToBottomBtn.style.display = 'none';
+            messages.scrollTop = messages.scrollHeight;
+
+            const loadingId = addMessage('assistant', '⏳ Analyzing & Retrieving across multi-agents...');
+            // Force scroll again after adding loading message
+            messages.scrollTop = messages.scrollHeight;
+
+            isProcessing = true;
+            sendBtn.disabled = true;
+            micBtn.disabled = true;
+            stopBtn.classList.add('visible');
+
+            currentAbortController = new AbortController();
+
+            try {
+                let response;
+
+                if (hasImage && imageFileToSend) {
+                    // ── Image-as-Prompt path ─────────────────────────────────────
+                    const formData = new FormData();
+                    formData.append('image', imageFileToSend, imageFileToSend.name);
+                    formData.append('query', imageQuery);
+                    formData.append('mode', selectedMode);
+                    response = await fetch(`${API_BASE}/query/image-stream`, {
+                        method: 'POST',
+                        body: formData,
+                        signal: currentAbortController.signal
+                    });
+                } else {
+                    // ── Text query path (with conversation history — Bug 10) ─────
+                    response = await fetch(`${API_BASE}/query/stream`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            query: query,
+                            mode: selectedMode,
+                            response_language: overrides.response_language || 'en',
+                            history: conversationHistory.slice(-6)  // Send last 6 turns for context
+                        }),
+                        signal: currentAbortController.signal
+                    });
+                }
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(errText || 'Query failed');
+                }
+
+                const loadingMessage = document.getElementById(loadingId);
+                const bubble = loadingMessage.querySelector('.bubble');
+                bubble.textContent = '';
+
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder();
+                let accumulatedText = "";
+
+                while (true) {
+                    const { value, done } = await reader.read();
+                    if (done) break;
+                    accumulatedText += decoder.decode(value, { stream: true });
+
+                    if (accumulatedText.includes('<details class="adaptive-details">')) {
+                        const parts = accumulatedText.split('<details class="adaptive-details">');
+                        const textPart = escapeHtml(parts[0]);
+                        const detailsPart = '<details class="adaptive-details">' + parts[1];
+                        bubble.innerHTML = textPart.replace(/\n/g, '<br>') + detailsPart;
+                    } else {
+                        bubble.textContent = accumulatedText;
+                    }
+                    // Smart scroll: only auto-scroll if user hasn't scrolled up
+                    if (!userScrolledUp) {
+                        messages.scrollTop = messages.scrollHeight;
+                    }
+                }
+
+                // Bug 10: Save assistant response to history (plain text, strip HTML)
+                const plainResponse = accumulatedText.replace(/<[^>]*>/g, '').trim();
+                if (plainResponse) {
+                    // Strip adaptive-details block from history (too verbose)
+                    const historyResponse = plainResponse.split('🔍 Adaptive RAG Details')[0].trim();
+                    conversationHistory.push({ role: 'assistant', content: historyResponse.slice(0, 600) });
+                    if (conversationHistory.length > 12) conversationHistory.splice(0, 2);
+                }
+
+                appendBubbleActions(bubble, accumulatedText);
+            } catch (error) {
+                if (error.name === 'AbortError') {
+                    // User pressed Stop — partial response is already shown, just mark it
+                    const loadingMessage = document.getElementById(loadingId);
+                    if (loadingMessage) {
+                        const bubble = loadingMessage.querySelector('.bubble');
+                        if (bubble && bubble.textContent.trim()) {
+                            bubble.innerHTML += '<br><em style="color:#94a3b8;font-size:0.82em;">⏹ Generation stopped by user.</em>';
+                            appendBubbleActions(bubble, bubble.innerText);
+                        } else {
+                            loadingMessage.remove();
+                        }
+                    }
+                } else {
+                    const loadingMessage = document.getElementById(loadingId);
+                    if (loadingMessage) loadingMessage.remove();
+                    addMessage('assistant', '❌ Error: ' + error.message);
+                }
+            } finally {
+                isProcessing = false;
+                userScrolledUp = false;
+                jumpToBottomBtn.style.display = 'none';
+                sendBtn.disabled = false;
+                micBtn.disabled = false;
+                stopBtn.classList.remove('visible');
+                currentAbortController = null;
+            }
+        }
+
+        sendBtn.addEventListener('click', () => sendQuery());
+        queryInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') sendQuery();
+        });
+        
+        let messageSeq = 0;
+        // Add message
+        function addMessage(sender, content) {
+            const messageId = 'msg-' + Date.now() + '-' + (messageSeq++);
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message-row ${sender}`;
+            messageDiv.id = messageId;
+            const formattedContent = content.includes('<') ? content : escapeHtml(content).replace(/\n/g, '<br>');
+            messageDiv.innerHTML = `
+                <div class="meta-header">${sender === 'user' ? '👤 You' : '🤖 Adaptive Assistant'}</div>
+                <div class="bubble">${formattedContent}</div>
+            `;
+            messages.appendChild(messageDiv);
+            // Smart scroll: for new messages always scroll (user hasn't scrolled away yet)
+            if (!userScrolledUp) {
+                messages.scrollTop = messages.scrollHeight;
+            }
+
+            if (sender === 'assistant' && !content.startsWith('⏳')) {
+                const bubble = messageDiv.querySelector('.bubble');
+                appendBubbleActions(bubble, content);
+            }
+
+            return messageId;
+        }
+
+        
+        // Show status
+        function showStatus(message, type) {
+            uploadStatus.textContent = message;
+            uploadStatus.className = `status-box ${type}`;
+            uploadStatus.style.display = 'block';
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    uploadStatus.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // ====================================================================
+        // UTILITIES & OFFLINE TEXT-TO-SPEECH (AUDIO GENERATION)
+        // ====================================================================
+        function escapeHtml(str) {
+            if (!str) return '';
+            return String(str)
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        function appendBubbleActions(bubble, fullText) {
+            if (!bubble || bubble.querySelector('.bubble-actions')) return;
+
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'bubble-actions';
+            actionsDiv.innerHTML = `
+                <button class="action-icon-btn" onclick="copyAnswerText(this)" title="Copy text to clipboard">📋 Copy</button>
+                <button class="action-icon-btn tts-btn" onclick="readAnswerAloud(this)" title="Generate offline speech audio">🔊 Speak (Offline TTS)</button>
+                <select class="action-icon-btn voice-select" title="TTS Voice">
+                    <option value="default">Default</option>
+                    <option value="zira">Female (Zira)</option>
+                    <option value="david">Male (David)</option>
+                </select>
+            `;
+            bubble.appendChild(actionsDiv);
+        }
+
+        async function copyAnswerText(btn) {
+            const bubble = btn.closest('.bubble');
+            const clone = bubble.cloneNode(true);
+            const actions = clone.querySelector('.bubble-actions');
+            if (actions) actions.remove();
+            const details = clone.querySelector('.adaptive-details');
+            if (details) details.remove();
+
+            const textToCopy = clone.innerText.trim();
+            try {
+                await navigator.clipboard.writeText(textToCopy);
+                const prev = btn.innerHTML;
+                btn.innerHTML = '✅ Copied!';
+                setTimeout(() => { btn.innerHTML = prev; }, 2000);
+            } catch (err) {
+                const ta = document.createElement('textarea');
+                ta.value = textToCopy;
+                document.body.appendChild(ta);
+                ta.select();
+                document.execCommand('copy');
+                ta.remove();
+                btn.innerHTML = '✅ Copied!';
+                setTimeout(() => { btn.innerHTML = '📋 Copy'; }, 2000);
+            }
+        }
+
+        let currentAudioPlayer = null;
+        let currentPlayingBtn = null;
+
+        async function readAnswerAloud(btn) {
+            // Toggle pause / play if clicking the active audio button
+            if (currentAudioPlayer && currentPlayingBtn === btn) {
+                if (!currentAudioPlayer.paused) {
+                    currentAudioPlayer.pause();
+                    btn.innerHTML = '▶️ Resume';
+                    btn.classList.remove('playing');
+                    return;
+                } else {
+                    currentAudioPlayer.play();
+                    btn.innerHTML = '⏹️ Stop';
+                    btn.classList.add('playing');
+                    return;
+                }
+            }
+
+            // Stop any previous playing audio
+            if (currentAudioPlayer) {
+                currentAudioPlayer.pause();
+                currentAudioPlayer = null;
+                if (currentPlayingBtn) {
+                    currentPlayingBtn.innerHTML = '🔊 Speak (Offline TTS)';
+                    currentPlayingBtn.classList.remove('playing', 'loading');
+                }
+            }
+
+            const bubble = btn.closest('.bubble');
+            const clone = bubble.cloneNode(true);
+            const actions = clone.querySelector('.bubble-actions');
+            if (actions) actions.remove();
+            const details = clone.querySelector('.adaptive-details');
+            if (details) details.remove();
+
+            const textToSpeak = clone.innerText.trim();
+            if (!textToSpeak) return;
+
+            const voiceSelect = bubble.querySelector('.voice-select');
+            const voice = voiceSelect ? voiceSelect.value : 'default';
+
+            btn.innerHTML = '⏳ Synthesizing...';
+            btn.classList.add('loading');
+
+            try {
+                const response = await fetch(`${API_BASE}/tts/synthesize`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text: textToSpeak,
+                        voice: voice
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success && data.audio_url) {
+                    const audioUrl = data.audio_url.startsWith('http') ? data.audio_url : `${API_BASE}${data.audio_url}`;
+                    const audio = new Audio(audioUrl);
+                    currentAudioPlayer = audio;
+                    currentPlayingBtn = btn;
+
+                    btn.classList.remove('loading');
+                    btn.classList.add('playing');
+                    btn.innerHTML = '⏹️ Stop';
+
+                    audio.onended = () => {
+                        btn.innerHTML = '🔊 Speak Again';
+                        btn.classList.remove('playing');
+                        currentAudioPlayer = null;
+                        currentPlayingBtn = null;
+                    };
+
+                    audio.onerror = (e) => {
+                        console.warn('Audio playback error, falling back to browser speech:', e);
+                        fallbackBrowserSpeech(textToSpeak, btn);
+                    };
+
+                    await audio.play();
+                } else {
+                    throw new Error(data.error || 'TTS synthesis failed');
+                }
+            } catch (err) {
+                console.warn('Backend TTS error, falling back to browser speech:', err);
+                fallbackBrowserSpeech(textToSpeak, btn);
+            }
+        }
+
+        function fallbackBrowserSpeech(text, btn) {
+            if (!window.speechSynthesis) {
+                alert('Audio playback is not supported on this browser.');
+                btn.innerHTML = '🔊 Speak (Offline TTS)';
+                btn.classList.remove('loading', 'playing');
+                return;
+            }
+            window.speechSynthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.rate = 1.0;
+            btn.innerHTML = '⏹️ Stop';
+            btn.classList.remove('loading');
+            btn.classList.add('playing');
+
+            utterance.onend = () => {
+                btn.innerHTML = '🔊 Speak Again';
+                btn.classList.remove('playing');
+            };
+            utterance.onerror = () => {
+                btn.innerHTML = '🔊 Speak (Offline TTS)';
+                btn.classList.remove('playing');
+            };
+            window.speechSynthesis.speak(utterance);
+        }
+        
+        // Initialize
+        updateFileList();
+    </script>
+</body>
+</html>
